@@ -20,6 +20,9 @@ TELEGRAM_CHAT_ID = "" or os.getenv("TELEGRAM_CHAT_ID")
 WXPUSHER_SPT = "" or os.getenv("WXPUSHER_SPT")
 # read接口的bash命令，本地部署时可对应替换headers、cookies
 curl_str = os.getenv('WXREAD_CURL_BASH')
+# 代理地址（可选），支持 http:// 和 socks5://
+PROXY = os.getenv('HTTP_PROXY') or os.getenv('http_proxy') or os.getenv('HTTPS_PROXY') or os.getenv('https_proxy') or None
+
 
 # headers、cookies是一个省略模版，本地或者docker部署时对应替换
 cookies = {
@@ -112,3 +115,11 @@ def convert(curl_command):
 
 
 headers, cookies = convert(curl_str) if curl_str else (headers, cookies)
+
+# 构建 proxies 字典
+proxies = None
+if PROXY:
+    proxies = {
+        'http': PROXY,
+        'https': PROXY,
+    }
