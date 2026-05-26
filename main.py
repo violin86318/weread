@@ -20,6 +20,14 @@ COOKIE_DATA = {"rq": "%2Fweb%2Fbook%2Fread"}
 READ_URL = "https://weread.qq.com/web/book/read"
 RENEW_URL = "https://weread.qq.com/web/login/renewal"
 FIX_SYNCKEY_URL = "https://weread.qq.com/web/book/chapterInfos"
+SESSION = requests.Session()
+SESSION.trust_env = False
+
+
+def cookie_summary():
+    important = ('wr_vid', 'wr_skey', 'wr_name', 'wr_gender', 'wr_avatar', 'RK', 'ptcz')
+    present = [key for key in important if key in cookies]
+    return f"{len(cookies)} cookies parsed; present={present}"
 
 
 def encode_data(data):
@@ -43,18 +51,25 @@ def cal_hash(input_string):
 
 def get_wr_skey():
     """刷新cookie密钥"""
-    response = requests.post(RENEW_URL, headers=headers, cookies=cookies,
-                             data=json.dumps(COOKIE_DATA, separators=(',', ':')),
-                             proxies=proxies)
-    for cookie in response.headers.get('Set-Cookie', '').split(';'):
+    response = SESSION.post(RENEW_URL, headers=headers, cookies=cookies,
+                            data=json.dumps(COOKIE_DATA, separators=(',', ':')),
+                            proxies=proxies, timeout=30)
+    set_cookie = response.headers.get('Set-Cookie', '')
+    logging.info(
+        "🔎 renewal status=%s, set-cookie-has-wr_skey=%s, %s",
+        response.status_code,
+        'wr_skey' in set_cookie,
+        cookie_summary(),
+    )
+    for cookie in set_cookie.split(';'):
         if "wr_skey" in cookie:
             return cookie.split('=')[-1][:8]
     return None
 
 def fix_no_synckey():
-    requests.post(FIX_SYNCKEY_URL, headers=headers, cookies=cookies,
-                             data=json.dumps({"bookIds":["3300060341"]}, separators=(',', ':')),
-                             proxies=proxies)
+    SESSION.post(FIX_SYNCKEY_URL, headers=headers, cookies=cookies,
+                 data=json.dumps({"bookIds":["3300060341"]}, separators=(',', ':')),
+                 proxies=proxies, timeout=30)
 
 def refresh_cookie():
     logging.info(f"🍪 刷新cookie")
@@ -86,9 +101,9 @@ while index <= READ_NUM:
 
     logging.info(f"⏱️ 尝试第 {index} 次阅读...")
     logging.info(f"📕 data: {data}")
-    response = requests.post(READ_URL, headers=headers, cookies=cookies,
-                             data=json.dumps(data, separators=(',', ':')),
-                             proxies=proxies)
+    response = SESSION.post(READ_URL, headers=headers, cookies=cookies,
+                            data=json.dumps(data, separators=(',', ':')),
+                            proxies=proxies, timeout=30)
     resData = response.json()
     logging.info(f"📕 response: {resData}")
 
