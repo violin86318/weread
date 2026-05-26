@@ -8,7 +8,7 @@ import hashlib
 import requests
 import urllib.parse
 from push import push
-from config import data, headers, cookies, READ_NUM, PUSH_METHOD, book, chapter
+from config import data, headers, cookies, READ_NUM, PUSH_METHOD, book, chapter, proxies
 
 # 配置日志格式
 logger = logging.getLogger(__name__)
@@ -44,7 +44,8 @@ def cal_hash(input_string):
 def get_wr_skey():
     """刷新cookie密钥"""
     response = requests.post(RENEW_URL, headers=headers, cookies=cookies,
-                             data=json.dumps(COOKIE_DATA, separators=(',', ':')))
+                             data=json.dumps(COOKIE_DATA, separators=(',', ':')),
+                             proxies=proxies)
     for cookie in response.headers.get('Set-Cookie', '').split(';'):
         if "wr_skey" in cookie:
             return cookie.split('=')[-1][:8]
@@ -52,7 +53,8 @@ def get_wr_skey():
 
 def fix_no_synckey():
     requests.post(FIX_SYNCKEY_URL, headers=headers, cookies=cookies,
-                             data=json.dumps({"bookIds":["3300060341"]}, separators=(',', ':')))
+                             data=json.dumps({"bookIds":["3300060341"]}, separators=(',', ':')),
+                             proxies=proxies)
 
 def refresh_cookie():
     logging.info(f"🍪 刷新cookie")
@@ -84,7 +86,9 @@ while index <= READ_NUM:
 
     logging.info(f"⏱️ 尝试第 {index} 次阅读...")
     logging.info(f"📕 data: {data}")
-    response = requests.post(READ_URL, headers=headers, cookies=cookies, data=json.dumps(data, separators=(',', ':')))
+    response = requests.post(READ_URL, headers=headers, cookies=cookies,
+                             data=json.dumps(data, separators=(',', ':')),
+                             proxies=proxies)
     resData = response.json()
     logging.info(f"📕 response: {resData}")
 
