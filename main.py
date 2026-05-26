@@ -30,6 +30,16 @@ def cookie_summary():
     return f"{len(cookies)} cookies parsed; present={present}"
 
 
+def extract_wr_skey(set_cookie):
+    values = re.findall(r'(?:^|[,;\s])wr_skey=([^;,]*)', set_cookie)
+    logging.info("🔎 wr_skey candidates=%s, value_lengths=%s",
+                 len(values), [len(value) for value in values])
+    for value in values:
+        if value:
+            return value[:8]
+    return None
+
+
 def encode_data(data):
     """数据编码"""
     return '&'.join(f"{k}={urllib.parse.quote(str(data[k]), safe='')}" for k in sorted(data.keys()))
@@ -61,9 +71,15 @@ def get_wr_skey():
         'wr_skey' in set_cookie,
         cookie_summary(),
     )
-    for cookie in set_cookie.split(';'):
-        if "wr_skey" in cookie:
-            return cookie.split('=')[-1][:8]
+    new_skey = extract_wr_skey(set_cookie)
+    if new_skey:
+        return new_skey
+
+    current_skey = cookies.get('wr_skey', '')
+    if current_skey:
+        logging.warning("⚠️ 未获取到新的非空 wr_skey，继续使用 WXREAD_CURL_BASH 中已有的 wr_skey")
+        return current_skey[:8]
+
     return None
 
 def fix_no_synckey():
